@@ -1,0 +1,7 @@
+compiler/intelfpga/p4c/testdata/p4_16_errors/issue5948-null-action-call-invocation.p4(16): [--Werror=unsupported] error: unlisted(): action calls in table property defaulp_action are not supported
+        defaulp_action = unlisted();
+                         ^^^^^^^^^^
+compiler/intelfpga/p4c/testdata/p4_16_errors/issue5948-null-action-call-invocation.p4(16)
+        defaulp_action = unlisted();
+        ^^^^^^^^^^^^^^
+error: 1 errors were detected during the compilation phase frontend.

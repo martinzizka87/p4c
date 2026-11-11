@@ -8,6 +8,7 @@
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "frontends/common/resolveReferences/resolveReferences.h"
 #include "frontends/p4/moveDeclarations.h"
+#include "frontends/p4/removeParameters.h"
 #include "frontends/p4/typeChecking/typeChecker.h"
 #include "frontends/parsers/parserDriver.h"
 #include "helpers.h"
@@ -302,6 +303,45 @@ TEST_F(P4CFrontendDefaultAction, MismatchedInvalidHeaderActionArgs) {
     errors.dumpAndReset();
     ASSERT_TRUE(prog);
     EXPECT_GT(::P4::errorCount(), 0);
+}
+
+struct P4CFrontendActionParameters : P4CFrontend {
+    P4CFrontendActionParameters() { addPasses({new P4::RemoveActionParameters(&typeMap)}); }
+    P4::TypeMap typeMap;
+};
+
+TEST_F(P4CFrontendActionParameters, ActionCallInOtherTableProperty) {
+    const auto program = P4_SOURCE(R"(
+        control C() {
+            action a() { }
+            action b() { }
+            table t {
+                actions = { a; }
+                defaulp_action = b();
+            }
+            apply { t.apply(); }
+        }
+    )");
+    RedirectStderr errors;
+    parseAndProcess(program);
+    errors.dumpAndReset();
+    EXPECT_EQ(::P4::errorCount(), 1);
+    EXPECT_TRUE(errors.contains("action calls in table property defaulp_action are not supported"));
+}
+
+TEST_F(P4CFrontendActionParameters, DefaultAction) {
+    const auto program = P4_SOURCE(R"(
+        control C() {
+            action a() { }
+            table t {
+                actions = { a; }
+                default_action = a();
+            }
+            apply { t.apply(); }
+        }
+    )");
+    ASSERT_NE(parseAndProcess(program), nullptr);
+    EXPECT_EQ(::P4::errorCount(), 0);
 }
 
 }  // namespace P4::Test

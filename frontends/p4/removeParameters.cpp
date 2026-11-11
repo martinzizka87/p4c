@@ -91,7 +91,20 @@ void FindActionParameters::postorder(const IR::MethodCallExpression *expression)
         if (isInContext<IR::ActionListElement>())
             // These are processed elsewhere
             return;
-        // This is probably the default_action; we must remove some parameters
+        // Other table properties can also contain action calls; only default_action
+        // has a corresponding invocation in the action list.
+        const auto *property = findContext<IR::Property>();
+        if (!property || property->name != IR::TableProperties::defaultActionPropertyName) {
+            if (property)
+                error(ErrorType::ERR_UNSUPPORTED,
+                      "%1%: action calls in table property %2% are not supported", expression,
+                      property->name);
+            else
+                error(ErrorType::ERR_UNSUPPORTED, "%1%: action calls in tables are not supported here",
+                      expression);
+            return;
+        }
+        // Remove the arguments bound in the action list from the default action.
         invocations->bindDefaultAction(ac->action, expression);
     } else {
         // Direction action invocation: remove all parameters
